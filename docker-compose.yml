@@ -1,0 +1,33 @@
+services:
+  catalog_service:
+    build: ./catalog_service
+    container_name: catalog_service
+    ports:
+      - "5001:5001"
+    networks:
+      - bazar_network
+
+  order_service:
+    build: ./order_service
+    container_name: order_service
+    ports:
+      - "5002:5002"
+    networks:
+      - bazar_network
+    depends_on:
+      - catalog_service
+
+  frontend_service:
+    build: ./frontend_service
+    container_name: frontend_service
+    ports:
+      - "5000:5000"
+    networks:
+      - bazar_network
+    depends_on:
+      - catalog_service
+      - order_service
+
+networks:
+  bazar_network:
+    driver: bridge
