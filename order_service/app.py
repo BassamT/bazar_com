@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 import requests
 import sqlite3
 from database import init_db
+import datetime
 
 app = Flask(__name__)
 DATABASE = 'orders.db'
@@ -25,17 +26,35 @@ def purchase(item_id):
     # Record the order
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS orders (
-            order_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item_id INTEGER,
-            quantity INTEGER
-        )
-    ''')
-    cursor.execute('INSERT INTO orders (item_id, quantity) VALUES (?, ?)', (item_id, 1))
+    # Get current timestamp
+    current_timestamp = datetime.datetime.now().isoformat()
+
+    # Insert the order with timestamp
+    cursor.execute(
+        'INSERT INTO orders (item_id, quantity, timestamp) VALUES (?, ?, ?)',
+        (item_id, 1, current_timestamp)
+    )
     conn.commit()
     conn.close()
     return jsonify({'message': f'Purchased item {item_id}'})
+
+@app.route('/orders', methods=['GET'])
+def get_all_orders():
+    try:
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM orders')
+        rows = cursor.fetchall()
+        # Get column names from the cursor description
+        column_names = [description[0] for description in cursor.description]
+        conn.close()
+
+        # Convert rows to list of dictionaries
+        orders = [dict(zip(column_names, row)) for row in rows]
+
+        return jsonify(orders), 200
+    except sqlite3.Error as e:
+        return jsonify({'error': f'Database error: {e}'}), 500
 
 if __name__ == '__main__':
     init_db()

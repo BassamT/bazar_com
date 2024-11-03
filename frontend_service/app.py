@@ -22,5 +22,11 @@ def purchase(item_id):
     response = requests.put(f"{ORDER_SERVICE_URL}/purchase/{item_id}")
     return jsonify(response.json())
 
+@app.route('/orders', methods=['GET'])
+def get_all_orders():
+    response = requests.get(f"{ORDER_SERVICE_URL}/orders")
+    return jsonify(response.json()), response.status_code
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
