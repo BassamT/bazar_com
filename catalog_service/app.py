@@ -11,6 +11,7 @@ import sqlite3
 from database import init_db
 import threading
 import time
+import logging
 
 app = Flask(__name__)
 DATABASE = 'catalog.db'
@@ -36,9 +37,9 @@ def restock_items():
                 cursor.execute('UPDATE books SET quantity = quantity + 5')
                 conn.commit()
                 conn.close()
-                print("Stock updated: Each item's quantity increased by 5.")
+                logging.info("Stock updated: Each item's quantity increased by 5.")
             except Exception as e:
-                print(f"Error in restocking items: {e}")
+                logging.info(f"Error in restocking items: {e}")
 
 @app.route('/search/<topic>', methods=['GET'])
 def search(topic):
@@ -114,4 +115,4 @@ if __name__ == '__main__':
     init_db()
     # Start the restocking thread
     threading.Thread(target=restock_items, daemon=True).start()
-    app.run(host='0.0.0.0', port=5001)
+    app.run(host='0.0.0.0', port=5001, debug=True)
