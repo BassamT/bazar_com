@@ -1,0 +1,95 @@
+ ✔ Container catalog_service   Recreated                                                                                                     0.4s
+ ✔ Container order_service     Recreated                                                                                                     0.3s
+ ✔ Container frontend_service  Recreated                                                                                                     0.2s
+Attaching to catalog_service, frontend_service, order_service
+catalog_service   |  * Serving Flask app 'app'
+catalog_service   |  * Debug mode: on
+catalog_service   | WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+catalog_service   |  * Running on all addresses (0.0.0.0)
+catalog_service   |  * Running on http://127.0.0.1:5001
+catalog_service   |  * Running on http://172.18.0.2:5001
+catalog_service   | Press CTRL+C to quit
+catalog_service   |  * Restarting with stat
+catalog_service   |  * Debugger is active!
+catalog_service   |  * Debugger PIN: 703-662-184
+order_service     | Orders database initialized.
+order_service     |  * Serving Flask app 'app'
+order_service     |  * Debug mode: on
+order_service     | WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+order_service     |  * Running on all addresses (0.0.0.0)
+order_service     |  * Running on http://127.0.0.1:5002
+order_service     |  * Running on http://172.18.0.3:5002
+order_service     | Press CTRL+C to quit
+order_service     |  * Restarting with stat
+frontend_service  |  * Serving Flask app 'app'
+frontend_service  |  * Debug mode: on
+frontend_service  | WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+frontend_service  |  * Running on all addresses (0.0.0.0)
+frontend_service  |  * Running on http://127.0.0.1:5000
+frontend_service  |  * Running on http://172.18.0.4:5000
+frontend_service  | Press CTRL+C to quit
+frontend_service  |  * Restarting with stat
+order_service     | Orders database initialized.
+order_service     |  * Debugger is active!
+order_service     |  * Debugger PIN: 516-155-318
+frontend_service  |  * Debugger is active!
+frontend_service  |  * Debugger PIN: 410-853-429
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:37] "GET /info/4 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:37] "PUT /update/4 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:37] "PUT /purchase/4 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:37] "PUT /purchase/4 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:39] "GET /info/3 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:39] "PUT /update/3 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:39] "PUT /purchase/3 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:39] "PUT /purchase/3 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:41] "GET /info/2 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:41] "PUT /update/2 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:41] "PUT /purchase/2 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:41] "PUT /purchase/2 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:42] "GET /info/1 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:42] "PUT /update/1 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:42] "PUT /purchase/1 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:42] "PUT /purchase/1 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:44] "GET /info/4 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:44] "PUT /update/4 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:44] "PUT /purchase/4 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:44] "PUT /purchase/4 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:45] "GET /info/3 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:45] "PUT /update/3 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:45] "PUT /purchase/3 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:45] "PUT /purchase/3 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:46] "GET /info/2 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:46] "PUT /update/2 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:46] "PUT /purchase/2 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:46] "PUT /purchase/2 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:47] "GET /info/1 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:47] "PUT /update/1 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:47] "PUT /purchase/1 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:47] "PUT /purchase/1 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:48] "GET /info/4 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:48] "PUT /update/4 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:48] "PUT /purchase/4 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:48] "PUT /purchase/4 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:49] "GET /info/3 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:49] "PUT /update/3 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:49] "PUT /purchase/3 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:49] "PUT /purchase/3 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:50] "GET /info/2 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:50] "PUT /update/2 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:50] "PUT /purchase/2 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:50] "PUT /purchase/2 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:51] "GET /info/1 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.3 - - [03/Nov/2024 15:24:51] "PUT /update/1 HTTP/1.1" 200 -
+order_service     | 172.18.0.4 - - [03/Nov/2024 15:24:51] "PUT /purchase/1 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:51] "PUT /purchase/1 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.4 - - [03/Nov/2024 15:24:57] "GET /search/distributed%20systems HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:24:57] "GET /search/distributed%20systems HTTP/1.1" 200 -
+catalog_service   | 172.18.0.4 - - [03/Nov/2024 15:25:16] "GET /info/1 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:25:16] "GET /info/1 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.4 - - [03/Nov/2024 15:25:21] "GET /info/2 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:25:21] "GET /info/2 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.4 - - [03/Nov/2024 15:25:25] "GET /info/3 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:25:25] "GET /info/3 HTTP/1.1" 200 -
+catalog_service   | 172.18.0.4 - - [03/Nov/2024 15:25:28] "GET /info/4 HTTP/1.1" 200 -
+catalog_service   | INFO:werkzeug:172.18.0.4 - - [03/Nov/2024 15:25:28] "GET /info/4 HTTP/1.1" 200 -
+frontend_service  | 172.18.0.1 - - [03/Nov/2024 15:25:28] "GET /info/4 HTTP/1.1" 200 -

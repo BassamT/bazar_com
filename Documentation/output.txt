@@ -1,0 +1,138 @@
+C:\Users\bassa>curl http://localhost:5000/search/distributed%20systems
+[
+  {
+    "id": 1,
+    "title": "How to get a good grade in DOS in 40 minutes a day"
+  },
+  {
+    "id": 2,
+    "title": "RPCs for Noobs"
+  }
+]
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/4
+{
+  "message": "Purchased item 4"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/4
+{
+  "message": "Purchased item 4"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/4
+{
+  "message": "Purchased item 4"
+}
+
+C:\Users\bassa>curl http://localhost:5000/search/distributed%20systems
+[
+  {
+    "id": 1,
+    "title": "How to get a good grade in DOS in 40 minutes a day"
+  },
+  {
+    "id": 2,
+    "title": "RPCs for Noobs"
+  }
+]
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/4
+{
+  "message": "Purchased item 4"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/3
+{
+  "message": "Purchased item 3"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/2
+{
+  "message": "Purchased item 2"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/1
+{
+  "message": "Purchased item 1"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/4
+{
+  "message": "Purchased item 4"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/3
+{
+  "message": "Purchased item 3"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/2
+{
+  "message": "Purchased item 2"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/1
+{
+  "message": "Purchased item 1"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/4
+{
+  "message": "Purchased item 4"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/3
+{
+  "message": "Purchased item 3"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/2
+{
+  "message": "Purchased item 2"
+}
+
+C:\Users\bassa>curl -X PUT http://localhost:5000/purchase/1
+{
+  "message": "Purchased item 1"
+}
+
+C:\Users\bassa>curl http://localhost:5000/search/distributed%20systems
+[
+  {
+    "id": 1,
+    "title": "How to get a good grade in DOS in 40 minutes a day"
+  },
+  {
+    "id": 2,
+    "title": "RPCs for Noobs"
+  }
+]
+
+C:\Users\bassa>curl http://localhost:5000/info/1
+{
+  "price": 50.0,
+  "quantity": 41,
+  "title": "How to get a good grade in DOS in 40 minutes a day"
+}
+
+C:\Users\bassa>curl http://localhost:5000/info/2
+{
+  "price": 25.0,
+  "quantity": 42,
+  "title": "RPCs for Noobs"
+}
+
+C:\Users\bassa>curl http://localhost:5000/info/3
+{
+  "price": 75.0,
+  "quantity": 42,
+  "title": "Xen and the Art of Surviving Undergraduate School"
+}
+
+C:\Users\bassa>curl http://localhost:5000/info/4
+{
+  "price": 100.0,
+  "quantity": 52,
+  "title": "Cooking for the Impatient Undergrad"
+}
