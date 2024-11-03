@@ -1,26 +1,22 @@
+# order_service/database.py
+
 import sqlite3
+import os
 
 def init_db():
-    conn = sqlite3.connect('catalog.db')
+    # Get the database filename from environment variables or default to 'orders.db'
+    DATABASE = os.environ.get('DATABASE', 'orders.db')
+    
+    conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS books (
-            id INTEGER PRIMARY KEY,
-            title TEXT,
-            topic TEXT,
+        CREATE TABLE IF NOT EXISTS orders (
+            order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            item_id INTEGER,
             quantity INTEGER,
-            price REAL
+            timestamp TEXT
         )
     ''')
-    # Seed initial data if table is empty
-    cursor.execute('SELECT COUNT(*) FROM books')
-    if cursor.fetchone()[0] == 0:
-        books = [
-            (1, 'How to get a good grade in DOS in 40 minutes a day', 'distributed systems', 10, 50.0),
-            (2, 'RPCs for Noobs', 'distributed systems', 10, 25.0),
-            (3, 'Xen and the Art of Surviving Undergraduate School', 'undergraduate school', 10, 75.0),
-            (4, 'Cooking for the Impatient Undergrad', 'undergraduate school', 10, 100.0),
-        ]
-        cursor.executemany('INSERT INTO books VALUES (?, ?, ?, ?, ?)', books)
-        conn.commit()
+    conn.commit()
     conn.close()
+    print("Orders database initialized.")

@@ -1,32 +1,98 @@
+# docker-compose.yml
+
+version: '3'
+
 services:
-  catalog_service:
-    build: ./catalog_service
-    container_name: catalog_service
-    ports:
-      - "5001:5001"
-    networks:
-      - bazar_network
-
-  order_service:
-    build: ./order_service
-    container_name: order_service
-    ports:
-      - "5002:5002"
-    networks:
-      - bazar_network
-    depends_on:
-      - catalog_service
-
   frontend_service:
-    build: ./frontend_service
+    build:
+      context: ./frontend_service
+      dockerfile: Dockerfile
     container_name: frontend_service
     ports:
       - "5000:5000"
+    environment:
+      - CATALOG_SERVICE_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
+      - ORDER_SERVICE_URLS=http://order_service_1:5002,http://order_service_2:5004
+      - CACHE_SIZE=100
+    depends_on:
+      - catalog_service_1
+      - catalog_service_2
+      - order_service_1
+      - order_service_2
     networks:
       - bazar_network
+
+  catalog_service_1:
+    build:
+      context: ./catalog_service
+      dockerfile: Dockerfile
+    container_name: catalog_service_1
+    ports:
+      - "5001:5001"
+    environment:
+      - DATABASE=catalog1.db
+      - PORT=5001
+      - CURRENT_REPLICA_URL=http://catalog_service_1:5001
+      - REPLICA_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
+      - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
+    networks:
+      - bazar_network
+
+  catalog_service_2:
+    build:
+      context: ./catalog_service
+      dockerfile: Dockerfile
+    container_name: catalog_service_2
+    ports:
+      - "5003:5003"
+    environment:
+      - DATABASE=catalog2.db
+      - PORT=5003
+      - CURRENT_REPLICA_URL=http://catalog_service_2:5003
+      - REPLICA_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
+      - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
+    networks:
+      - bazar_network
+
+  order_service_1:
+    build:
+      context: ./order_service
+      dockerfile: Dockerfile
+    container_name: order_service_1
+    ports:
+      - "5002:5002"
+    environment:
+      - DATABASE=orders1.db
+      - PORT=5002
+      - CURRENT_REPLICA_URL=http://order_service_1:5002
+      - REPLICA_URLS=http://order_service_1:5002,http://order_service_2:5004
+      - CATALOG_SERVICE_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
+      - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
     depends_on:
-      - catalog_service
-      - order_service
+      - catalog_service_1
+      - catalog_service_2
+    networks:
+      - bazar_network
+
+  order_service_2:
+    build:
+      context: ./order_service
+      dockerfile: Dockerfile
+    container_name: order_service_2
+    ports:
+      - "5004:5004"
+    environment:
+      - DATABASE=orders2.db
+      - PORT=5004
+      - CURRENT_REPLICA_URL=http://order_service_2:5004
+      - REPLICA_URLS=http://order_service_1:5002,http://order_service_2:5004
+      - CATALOG_SERVICE_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
+      - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
+    depends_on:
+      - catalog_service_1
+      - catalog_service_2
+    networks:
+      - bazar_network
 
 networks:
   bazar_network:
