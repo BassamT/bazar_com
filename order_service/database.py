@@ -1,11 +1,38 @@
-import sqlite3
+"""
+database.py
 
-# order_service/database.py
+This module initializes the orders database for the Order Service of Bazar.com.
+It creates the 'orders' table if it doesn't exist, ensuring the database is ready for order records.
+
+The 'orders' table schema:
+- order_id (INTEGER PRIMARY KEY AUTOINCREMENT): Unique identifier for each order.
+- item_id (INTEGER): The ID of the item purchased.
+- quantity (INTEGER): The quantity of the item purchased.
+- timestamp (TEXT): The date and time when the order was placed.
+
+Environment Variables:
+- DATABASE: Specifies the filename for the orders database. Defaults to 'orders.db' if not set.
+"""
 
 import sqlite3
 import os
 
 def init_db():
+    """
+    Initializes the orders database.
+
+    - Retrieves the database filename from the 'DATABASE' environment variable or defaults to 'orders.db'.
+    - Connects to the SQLite database specified.
+    - Creates the 'orders' table if it doesn't exist with the following columns:
+        - order_id: Auto-incrementing primary key.
+        - item_id: ID of the purchased item.
+        - quantity: Quantity purchased.
+        - timestamp: Timestamp of the purchase.
+    - Closes the database connection after setup.
+
+    Prints:
+        A confirmation message indicating that the orders database has been initialized.
+    """
     # Get the database filename from environment variables or default to 'orders.db'
     DATABASE = os.environ.get('DATABASE', 'orders.db')
     
@@ -22,4 +49,3 @@ def init_db():
     conn.commit()
     conn.close()
     print("Orders database initialized.")
-

@@ -1,3 +1,15 @@
+"""
+order_service.py
+
+This module implements the Order Service for Bazar.com, an online bookstore.
+It handles purchase requests by interacting with the Catalog Service to check stock,
+updates inventory, and records orders in the database.
+
+Endpoints provided by this service:
+- /purchase/<item_id> : Purchase a book by its ID.
+- /orders             : Retrieve all orders placed.
+"""
+
 from flask import Flask, jsonify, request
 import requests
 import sqlite3
@@ -8,9 +20,23 @@ app = Flask(__name__)
 DATABASE = 'orders.db'
 CATALOG_SERVICE_URL = 'http://catalog_service:5001'
 
-
 @app.route('/purchase/<int:item_id>', methods=['PUT'])
 def purchase(item_id):
+    """
+    Handles PUT requests to /purchase/<item_id>.
+
+    Processes a purchase of a book by its ID. It performs the following steps:
+    - Checks the item's availability by querying the Catalog Service.
+    - Decrements the item's quantity in the Catalog Service if in stock.
+    - Records the order in the local orders database.
+
+    Parameters:
+        item_id (int): The ID of the book to purchase.
+
+    Returns:
+        Response: A JSON response indicating the result of the purchase operation,
+                  or an error message with an appropriate HTTP status code.
+    """
     # Check item info from Catalog Service
     response = requests.get(f"{CATALOG_SERVICE_URL}/info/{item_id}")
     if response.status_code != 200:
@@ -40,6 +66,15 @@ def purchase(item_id):
 
 @app.route('/orders', methods=['GET'])
 def get_all_orders():
+    """
+    Handles GET requests to /orders.
+
+    Retrieves all orders from the orders database and returns them as a JSON response.
+
+    Returns:
+        Response: A JSON response containing a list of all orders,
+                  or an error message with a 500 status code in case of a database error.
+    """
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
