@@ -44,4 +44,7 @@ def init_db():
             (3, 'Xen and the Art of Surviving Undergraduate School', 'undergraduate school', 10, 75.0),
             (4, 'Cooking for the Impatient Undergrad', 'undergraduate school', 10, 100.0),
         ]
-        curso
+        cursor.executemany('INSERT INTO books VALUES (?, ?, ?, ?, ?)', books)
+        conn.commit()
+        print("Database initialized with default books.")
+    conn.close()

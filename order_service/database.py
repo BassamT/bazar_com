@@ -15,13 +15,11 @@ Environment Variables:
 """
 
 import sqlite3
-import os
 
 def init_db():
     """
     Initializes the orders database.
 
-    - Retrieves the database filename from the 'DATABASE' environment variable or defaults to 'orders.db'.
     - Connects to the SQLite database specified.
     - Creates the 'orders' table if it doesn't exist with the following columns:
         - order_id: Auto-incrementing primary key.
@@ -33,10 +31,7 @@ def init_db():
     Prints:
         A confirmation message indicating that the orders database has been initialized.
     """
-    # Get the database filename from environment variables or default to 'orders.db'
-    DATABASE = os.environ.get('DATABASE', 'orders.db')
-    
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect('orders.db')
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS orders (
