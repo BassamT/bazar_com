@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Expose the port (this is optional as ports are mapped in docker-compose)
+ARG PORT=5001
 EXPOSE ${PORT}
 
-CMD ["python", "app.py"]
+CMD ["python", "-u", "app.py"]

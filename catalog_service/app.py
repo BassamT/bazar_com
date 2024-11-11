@@ -1,4 +1,11 @@
-# catalog_service/app.py
+"""
+catalog_service.py
+
+This module implements the Catalog Service for Bazar.com, an online bookstore.
+It handles search, info, and update operations on the book catalog.
+It also includes a background thread that periodically restocks items.
+It now supports replication synchronization, cache invalidation, and enhanced error handling.
+"""
 
 from flask import Flask, jsonify, request
 from database import init_db
@@ -21,6 +28,7 @@ FRONTEND_CACHE_INVALIDATE_URL = os.environ.get('FRONTEND_CACHE_INVALIDATE_URL', 
 # Thread lock for thread safety
 db_lock = threading.Lock()
 
+# Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
 
@@ -41,18 +49,24 @@ def restock_items():
                 item_ids = [row[0] for row in cursor.fetchall()]
                 conn.close()
                 logging.info("Stock updated: Each item's quantity increased by 5.")
+                
                 # Invalidate cache for all items
                 for item_id in item_ids:
                     send_cache_invalidate(item_id)
+                
                 # Propagate restock to other replicas
                 data = {'restock': True}
                 propagate_update(data)
             except Exception as e:
                 logging.error(f"Error in restocking items: {e}")
 
+
 def send_cache_invalidate(item_id):
     """
     Sends a cache invalidation request to the Front-End Service.
+
+    Parameters:
+        item_id (int): ID of the item to invalidate in cache.
     """
     try:
         response = requests.post(f"{FRONTEND_CACHE_INVALIDATE_URL}/{item_id}")
@@ -63,12 +77,16 @@ def send_cache_invalidate(item_id):
     except Exception as e:
         logging.error(f"Error sending cache invalidate request: {e}")
 
+
 def propagate_update(data):
     """
-    Propagates the update to other replicas.
+    Propagates updates to other replicas to maintain consistency.
+
+    Parameters:
+        data (dict): Data to send to replicas, which includes item ID and updated values.
     """
     for url in REPLICA_URLS:
-        if url != CURRENT_REPLICA_URL and url != '':
+        if url != CURRENT_REPLICA_URL and url:
             try:
                 response = requests.post(f"{url}/replica_update", json=data)
                 if response.status_code == 200:
@@ -78,8 +96,19 @@ def propagate_update(data):
             except Exception as e:
                 logging.error(f"Error propagating update to {url}: {e}")
 
+
 @app.route('/search/<topic>', methods=['GET'])
 def search(topic):
+    """
+    Handles GET requests to /search/<topic>.
+    Queries the catalog database for books matching the given topic and returns a list of books.
+    
+    Parameters:
+        topic (str): The topic to search for.
+    
+    Returns:
+        Response: A JSON response containing a list of books with their IDs and titles.
+    """
     logging.info(f"Received search request for topic: {topic}")
     try:
         conn = sqlite3.connect(DATABASE)
@@ -92,8 +121,19 @@ def search(topic):
         logging.error(f"Error in search: {e}")
         return jsonify({'error': 'An error occurred while processing your request.'}), 500
 
+
 @app.route('/info/<int:item_id>', methods=['GET'])
 def info(item_id):
+    """
+    Handles GET requests to /info/<item_id>.
+    Retrieves detailed information about a book, including its title, quantity, and price.
+    
+    Parameters:
+        item_id (int): The ID of the book to retrieve information for.
+    
+    Returns:
+        Response: A JSON response containing the book's details, or a 404 error if not found.
+    """
     logging.info(f"Received info request for item_id: {item_id}")
     try:
         conn = sqlite3.connect(DATABASE)
@@ -110,8 +150,19 @@ def info(item_id):
         logging.error(f"Error in info: {e}")
         return jsonify({'error': 'An error occurred while processing your request.'}), 500
 
+
 @app.route('/update/<int:item_id>', methods=['PUT'])
 def update(item_id):
+    """
+    Handles PUT requests to /update/<item_id>.
+    Updates the quantity and/or price of a book specified by its ID.
+    
+    Parameters:
+        item_id (int): The ID of the book to update.
+    
+    Returns:
+        Response: A JSON response indicating the result of the operation.
+    """
     data = request.get_json()
     if not data:
         logging.warning("No data provided in update request.")
@@ -152,10 +203,15 @@ def update(item_id):
             logging.error(f"Error in update: {e}")
             return jsonify({'error': 'An error occurred while updating the item.'}), 500
 
+
 @app.route('/replica_update', methods=['POST'])
 def replica_update():
     """
     Endpoint to receive updates from other replicas.
+    Synchronizes the local database with changes made in other replicas.
+    
+    Returns:
+        Response: A JSON message indicating the success of the operation.
     """
     data = request.get_json()
     item_id = data.get('item_id')
@@ -180,6 +236,7 @@ def replica_update():
         except Exception as e:
             logging.error(f"Error in replica update: {e}")
             return jsonify({'error': 'An error occurred while updating the replica.'}), 500
+
 
 if __name__ == '__main__':
     init_db()

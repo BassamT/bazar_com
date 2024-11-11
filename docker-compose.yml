@@ -1,5 +1,3 @@
-# docker-compose.yml
-
 version: '3'
 
 services:
@@ -37,6 +35,13 @@ services:
       - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
     networks:
       - bazar_network
+    volumes:
+      - catalog_data_1:/app/catalog1.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   catalog_service_2:
     build:
@@ -53,6 +58,13 @@ services:
       - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
     networks:
       - bazar_network
+    volumes:
+      - catalog_data_2:/app/catalog2.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5003"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   order_service_1:
     build:
@@ -73,6 +85,13 @@ services:
       - catalog_service_2
     networks:
       - bazar_network
+    volumes:
+      - order_data_1:/app/orders1.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   order_service_2:
     build:
@@ -93,7 +112,20 @@ services:
       - catalog_service_2
     networks:
       - bazar_network
+    volumes:
+      - order_data_2:/app/orders2.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5004"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   bazar_network:
     driver: bridge
+
+volumes:
+  catalog_data_1:
+  catalog_data_2:
+  order_data_1:
+  order_data_2:
