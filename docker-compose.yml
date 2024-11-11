@@ -1,9 +1,13 @@
+version: '3'
+
 services:
   catalog_service:
     build: ./catalog_service
     container_name: catalog_service
     ports:
       - "5001:5001"
+    volumes:
+      - ./catalog_service/catalog.db:/app/catalog.db
     networks:
       - bazar_network
 
@@ -12,6 +16,8 @@ services:
     container_name: order_service
     ports:
       - "5002:5002"
+    volumes:
+      - ./order_service/orders.db:/app/orders.db
     networks:
       - bazar_network
     depends_on:
