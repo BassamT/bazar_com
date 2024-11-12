@@ -24,7 +24,6 @@ import os
 
 app = Flask(__name__)
 
-# Configuration from environment variables
 CATALOG_SERVICE_URLS = os.environ.get('CATALOG_SERVICE_URLS', '').split(',')
 ORDER_SERVICE_URLS = os.environ.get('ORDER_SERVICE_URLS', '').split(',')
 CACHE_SIZE = int(os.environ.get('CACHE_SIZE', 100))
@@ -36,7 +35,6 @@ order_index = 0
 # In-memory cache using OrderedDict for LRU eviction
 cache = OrderedDict()
 
-# Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
 

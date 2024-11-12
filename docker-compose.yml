@@ -28,20 +28,16 @@ services:
     ports:
       - "5001:5001"
     environment:
-      - DATABASE=catalog1.db
+      - DATABASE=/app/catalog1.db
       - PORT=5001
       - CURRENT_REPLICA_URL=http://catalog_service_1:5001
       - REPLICA_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
       - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
+      - IS_PRIMARY=true
+    volumes:
+      - ./catalog_service/catalog1.db:/app/catalog1.db
     networks:
       - bazar_network
-    volumes:
-      - catalog_data_1:/app/catalog1.db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   catalog_service_2:
     build:
@@ -51,20 +47,16 @@ services:
     ports:
       - "5003:5003"
     environment:
-      - DATABASE=catalog2.db
+      - DATABASE=/app/catalog2.db
       - PORT=5003
       - CURRENT_REPLICA_URL=http://catalog_service_2:5003
       - REPLICA_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
       - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
+      - IS_PRIMARY=flase
+    volumes:
+      - ./catalog_service/catalog2.db:/app/catalog2.db
     networks:
       - bazar_network
-    volumes:
-      - catalog_data_2:/app/catalog2.db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5003"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   order_service_1:
     build:
@@ -74,24 +66,19 @@ services:
     ports:
       - "5002:5002"
     environment:
-      - DATABASE=orders1.db
+      - DATABASE=/app/orders1.db
       - PORT=5002
       - CURRENT_REPLICA_URL=http://order_service_1:5002
       - REPLICA_URLS=http://order_service_1:5002,http://order_service_2:5004
       - CATALOG_SERVICE_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
       - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
+    volumes:
+      - ./order_service/orders1.db:/app/orders1.db
     depends_on:
       - catalog_service_1
       - catalog_service_2
     networks:
       - bazar_network
-    volumes:
-      - order_data_1:/app/orders1.db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5002"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   order_service_2:
     build:
@@ -101,31 +88,20 @@ services:
     ports:
       - "5004:5004"
     environment:
-      - DATABASE=orders2.db
+      - DATABASE=/app/orders2.db
       - PORT=5004
       - CURRENT_REPLICA_URL=http://order_service_2:5004
       - REPLICA_URLS=http://order_service_1:5002,http://order_service_2:5004
       - CATALOG_SERVICE_URLS=http://catalog_service_1:5001,http://catalog_service_2:5003
       - FRONTEND_CACHE_INVALIDATE_URL=http://frontend_service:5000/invalidate
+    volumes:
+      - ./order_service/orders2.db:/app/orders2.db
     depends_on:
       - catalog_service_1
       - catalog_service_2
     networks:
       - bazar_network
-    volumes:
-      - order_data_2:/app/orders2.db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5004"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 networks:
   bazar_network:
     driver: bridge
-
-volumes:
-  catalog_data_1:
-  catalog_data_2:
-  order_data_1:
-  order_data_2:

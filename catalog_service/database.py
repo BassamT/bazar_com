@@ -27,7 +27,6 @@ def init_db():
                     price REAL
                 )
             ''')
-            # Seed initial data if table is empty
             cursor.execute('SELECT COUNT(*) FROM books')
             if cursor.fetchone()[0] == 0:
                 books = [

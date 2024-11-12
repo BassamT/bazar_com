@@ -18,47 +18,53 @@ import os
 
 app = Flask(__name__)
 
-# Configuration from environment variables
 DATABASE = os.environ.get('DATABASE', 'catalog.db')
 PORT = int(os.environ.get('PORT', 5001))
 CURRENT_REPLICA_URL = os.environ.get('CURRENT_REPLICA_URL', f'http://localhost:{PORT}')
 REPLICA_URLS = os.environ.get('REPLICA_URLS', '').split(',')
 FRONTEND_CACHE_INVALIDATE_URL = os.environ.get('FRONTEND_CACHE_INVALIDATE_URL', 'http://frontend_service:5000/invalidate')
 
-# Thread lock for thread safety
 db_lock = threading.Lock()
 
-# Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
-
 
 def restock_items():
     """
     Background thread function that periodically increases the quantity of each book.
+    This function includes improved error handling, optimized cache invalidation, and a delay mechanism.
     """
     while True:
-        time.sleep(60)  # Restock every 60 seconds
+        time.sleep(10)  # Restock every 60 seconds 
         with db_lock:
             try:
                 conn = sqlite3.connect(DATABASE)
                 cursor = conn.cursor()
-                cursor.execute('UPDATE books SET quantity = quantity + 5')
+
+                # Increment quantity for each book
+                restock_amount = 5
+                cursor.execute('UPDATE books SET quantity = quantity + ?', (restock_amount,))
                 conn.commit()
-                # Get all item IDs
+
+                # Retrieve all item IDs for cache invalidation
                 cursor.execute('SELECT id FROM books')
                 item_ids = [row[0] for row in cursor.fetchall()]
-                conn.close()
                 logging.info("Stock updated: Each item's quantity increased by 5.")
-                
-                # Invalidate cache for all items
-                for item_id in item_ids:
-                    send_cache_invalidate(item_id)
-                
-                # Propagate restock to other replicas
-                data = {'restock': True}
-                propagate_update(data)
+            except sqlite3.Error as e:
+                logging.error(f"Database error during restock operation: {e}")
             except Exception as e:
-                logging.error(f"Error in restocking items: {e}")
+                logging.error(f"Unexpected error in restocking items: {e}")
+            finally:
+                if conn:
+                    conn.close()
+
+        for item_id in item_ids:
+            send_cache_invalidate(item_id)
+
+        # Propagate restock update to replicas
+        data = {'restock': True}
+        propagate_update(data)
+
+
 
 
 def send_cache_invalidate(item_id):
@@ -80,21 +86,38 @@ def send_cache_invalidate(item_id):
 
 def propagate_update(data):
     """
-    Propagates updates to other replicas to maintain consistency.
+    Propagates updates to other catalog service replicas to maintain consistency.
 
     Parameters:
-        data (dict): Data to send to replicas, which includes item ID and updated values.
+        data (dict): The data to propagate. This can include:
+            - 'item_id' (int): The ID of the item that was updated.
+            - 'quantity' (int, optional): The new quantity of the item.
+            - 'price' (float, optional): The new price of the item.
+            - 'restock' (bool, optional): A flag indicating if this is a restock operation.
+
+    Behavior:
+        - Sends a POST request with the provided data to the '/replica_update' endpoint
+          of each replica in the REPLICA_URLS list.
+        - Skips sending the update to itself by checking CURRENT_REPLICA_URL.
+        - Does not propagate updates received from other replicas to prevent update loops.
     """
+    logging.info(f"Starting propagation of update with data: {data}")
     for url in REPLICA_URLS:
-        if url != CURRENT_REPLICA_URL and url:
-            try:
-                response = requests.post(f"{url}/replica_update", json=data)
-                if response.status_code == 200:
-                    logging.info(f"Update propagated to {url}")
-                else:
-                    logging.error(f"Failed to propagate update to {url}")
-            except Exception as e:
-                logging.error(f"Error propagating update to {url}: {e}")
+        # Skip if the URL is empty or if it's the current replica
+        if not url or url == CURRENT_REPLICA_URL:
+            continue
+        try:
+            response = requests.post(f"{url}/replica_update", json=data)
+            if response.status_code == 200:
+                logging.info(f"Successfully propagated update to {url}: {data}")
+            else:
+                logging.error(f"Failed to propagate update to {url}. Status code: {response.status_code}, "
+                              f"Response: {response.text}")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Network error when trying to propagate update to {url}: {e}")
+        except Exception as e:
+            logging.error(f"Unexpected error during propagation to {url}: {e}")
+    # Do NOT propagate updates received from other replicas to prevent loops
 
 
 @app.route('/search/<topic>', methods=['GET'])
@@ -140,7 +163,7 @@ def info(item_id):
         cursor = conn.cursor()
         cursor.execute('SELECT title, quantity, price FROM books WHERE id=?', (item_id,))
         row = cursor.fetchone()
-        conn.close()
+        conn.close() 
         if row:
             return jsonify({'title': row[0], 'quantity': row[1], 'price': row[2]})
         else:
@@ -149,6 +172,7 @@ def info(item_id):
     except Exception as e:
         logging.error(f"Error in info: {e}")
         return jsonify({'error': 'An error occurred while processing your request.'}), 500
+
 
 
 @app.route('/update/<int:item_id>', methods=['PUT'])
@@ -171,14 +195,6 @@ def update(item_id):
     quantity = data.get('quantity')
     price = data.get('price')
 
-    if quantity is not None and not isinstance(quantity, int):
-        logging.warning("Invalid quantity type provided.")
-        return jsonify({'error': 'Quantity must be an integer.'}), 400
-
-    if price is not None and not isinstance(price, (int, float)):
-        logging.warning("Invalid price type provided.")
-        return jsonify({'error': 'Price must be a number.'}), 400
-
     # Invalidate cache before updating
     send_cache_invalidate(item_id)
 
@@ -191,35 +207,77 @@ def update(item_id):
             if price is not None:
                 cursor.execute('UPDATE books SET price=? WHERE id=?', (price, item_id))
             conn.commit()
-            conn.close()
             logging.info(f"Updated item_id: {item_id} with data: {data}")
-
-            # Propagate update to other replicas
-            data_to_propagate = {'item_id': item_id, 'quantity': quantity, 'price': price}
-            propagate_update(data_to_propagate)
-
-            return jsonify({'message': 'Item updated'})
         except Exception as e:
             logging.error(f"Error in update: {e}")
             return jsonify({'error': 'An error occurred while updating the item.'}), 500
+        finally:
+            if conn:
+                conn.close()
+
+    # Propagate update to other replicas after releasing lock
+    data_to_propagate = {'item_id': item_id, 'quantity': quantity, 'price': price}
+    propagate_update(data_to_propagate)
+
+    return jsonify({'message': 'Item updated'})
+
 
 
 @app.route('/replica_update', methods=['POST'])
 def replica_update():
     """
-    Endpoint to receive updates from other replicas.
-    Synchronizes the local database with changes made in other replicas.
-    
+    Endpoint to receive updates from other replicas for synchronization.
+
+    Expects:
+        - A JSON payload containing update data:
+            - For restock operations:
+                - 'restock' (bool): Should be True.
+            - For item updates:
+                - 'item_id' (int): The ID of the item to update.
+                - 'quantity' (int, optional): The new quantity for the item.
+                - 'price' (float, optional): The new price for the item.
+
+    Behavior:
+        - If a restock operation is received, it increases the quantity of all items by a fixed amount.
+        - For item-specific updates, it updates the specified fields in the local database.
+        - Does NOT propagate the update further to avoid update loops.
+        - Does NOT run restock operations independently; only applies restock updates received from the primary.
+
     Returns:
-        Response: A JSON message indicating the success of the operation.
+        - A JSON response indicating success or failure with appropriate HTTP status codes.
     """
     data = request.get_json()
+    logging.info(f"Received data for catalog replica update: {data}")
+
+    # Check if this is a restock request
+    if data.get('restock') == True:
+        with db_lock:
+            try:
+                conn = sqlite3.connect(DATABASE)
+                cursor = conn.cursor()
+                # Increase quantity of every item by the restock amount
+                restock_amount = 5
+                cursor.execute('UPDATE books SET quantity = quantity + ?', (restock_amount,))
+                conn.commit()
+                conn.close()
+                logging.info("Restock applied to all items in the database.")
+                return jsonify({'message': 'Restock applied to all items'}), 200
+            except sqlite3.Error as e:
+                logging.error(f"Error in restock operation: {e}")
+                return jsonify({'error': 'An error occurred during restock.'}), 500
+        
+        # Restock updates are only propagated by the primary replica
     item_id = data.get('item_id')
     quantity = data.get('quantity')
     price = data.get('price')
 
     if not item_id:
+        logging.error("replica_update missing item_id")
         return jsonify({'error': 'No item_id provided.'}), 400
+
+    if quantity is None and price is None:
+        logging.error("replica_update missing both quantity and price")
+        return jsonify({'error': 'No quantity or price provided for update.'}), 400
 
     with db_lock:
         try:
@@ -232,13 +290,20 @@ def replica_update():
             conn.commit()
             conn.close()
             logging.info(f"Replica updated item_id: {item_id} with data: {data}")
-            return jsonify({'message': 'Replica updated'})
-        except Exception as e:
+            return jsonify({'message': 'Replica updated'}), 200
+        except sqlite3.Error as e:
             logging.error(f"Error in replica update: {e}")
             return jsonify({'error': 'An error occurred while updating the replica.'}), 500
+        except Exception as e:
+            logging.error(f"Unexpected error during replica update: {e}")
+            return jsonify({'error': 'An unexpected error occurred.'}), 500
+    # Do NOT propagate updates received from other replicas
+
 
 
 if __name__ == '__main__':
     init_db()
-    threading.Thread(target=restock_items, daemon=True).start()
+    # Only run restock_items if this instance is the primary
+    if os.environ.get('IS_PRIMARY', 'false').lower() == 'true':
+        threading.Thread(target=restock_items, daemon=True).start()
     app.run(host='0.0.0.0', port=PORT)

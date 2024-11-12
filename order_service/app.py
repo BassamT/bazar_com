@@ -24,7 +24,6 @@ import os
 
 app = Flask(__name__)
 
-# Configuration from environment variables
 DATABASE = os.environ.get('DATABASE', 'orders.db')
 PORT = int(os.environ.get('PORT', 5002))
 CURRENT_REPLICA_URL = os.environ.get('CURRENT_REPLICA_URL', f'http://localhost:{PORT}')
@@ -32,10 +31,8 @@ REPLICA_URLS = os.environ.get('REPLICA_URLS', '').split(',')
 CATALOG_SERVICE_URLS = os.environ.get('CATALOG_SERVICE_URLS', '').split(',')
 FRONTEND_CACHE_INVALIDATE_URL = os.environ.get('FRONTEND_CACHE_INVALIDATE_URL', 'http://frontend_service:5000/invalidate')
 
-# Thread lock for thread safety
 db_lock = threading.Lock()
 
-# Logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 
 # Load balancing index for Catalog Service
@@ -66,7 +63,7 @@ def propagate_update(data):
     for url in REPLICA_URLS:
         if url != CURRENT_REPLICA_URL and url:
             try:
-                response = requests.post(f"{url}/replica_purchase", json=data, timeout=5)
+                response = requests.post(f"{url}/replica_purchase", json=data, timeout=500)
                 if response.status_code == 200:
                     logging.info(f"Purchase propagated to {url}")
                 else:
@@ -82,7 +79,7 @@ def send_cache_invalidate(item_id):
         item_id (int): ID of the item to invalidate in the cache.
     """
     try:
-        response = requests.post(f"{FRONTEND_CACHE_INVALIDATE_URL}/{item_id}", timeout=5)
+        response = requests.post(f"{FRONTEND_CACHE_INVALIDATE_URL}/{item_id}", timeout=500)
         if response.status_code == 200:
             logging.info(f"Cache invalidated for item_id: {item_id}")
         else:
@@ -95,10 +92,8 @@ def purchase(item_id):
     """
     Handles PUT requests to /purchase/<item_id>.
     Processes a purchase request by checking stock, updating inventory, and recording the order.
-
     Parameters:
         item_id (int): The ID of the book to purchase.
-
     Returns:
         Response: A JSON response indicating the result of the purchase operation.
     """
@@ -109,35 +104,39 @@ def purchase(item_id):
             logging.warning(f"Invalid item_id: {item_id}")
             return jsonify({'error': 'Invalid item ID'}), 400
 
-        # Get a Catalog Service URL (using round-robin load balancing)
+        # Step 1: Get a Catalog Service URL
         catalog_url = get_catalog_service_url()
         if not catalog_url:
+            logging.error("No Catalog Service available")
             return jsonify({'error': 'No Catalog Service available'}), 503
+        logging.info(f"Catalog Service URL obtained: {catalog_url}")
 
-        # Check item info from Catalog Service
-        response = requests.get(f"{catalog_url}/info/{item_id}", timeout=5)
+        # Step 2: Check item info from Catalog Service
+        response = requests.get(f"{catalog_url}/info/{item_id}", timeout=10)
         if response.status_code != 200:
-            logging.error(f"Item not found: {item_id}")
+            logging.error(f"Item not found or error in catalog response for item_id {item_id}")
             return jsonify({'error': 'Item not found'}), 404
         item_info = response.json()
+        logging.info(f"Item info for item_id {item_id} retrieved: {item_info}")
         if item_info['quantity'] <= 0:
-            logging.info(f"Item out of stock: {item_id}")
+            logging.warning(f"Item out of stock: {item_id}")
             return jsonify({'error': 'Item out of stock'}), 400
 
-        # Decrement quantity in Catalog Service
+        # Step 3: Decrement quantity in Catalog Service
         new_quantity = item_info['quantity'] - 1
         logging.info(f"Updating item_id: {item_id} with new quantity: {new_quantity}")
-
-        # Invalidate cache before updating
+        
+        # Step 4: Invalidate cache before updating
         send_cache_invalidate(item_id)
 
-        # Update Catalog Service
-        update_response = requests.put(f"{catalog_url}/update/{item_id}", json={'quantity': new_quantity}, timeout=5)
+        # Step 5: Update Catalog Service
+        update_response = requests.put(f"{catalog_url}/update/{item_id}", json={'quantity': new_quantity}, timeout=10)
         if update_response.status_code != 200:
             logging.error(f"Failed to update stock for item_id: {item_id}. Response: {update_response.text}")
             return jsonify({'error': 'Failed to update stock'}), 500
+        logging.info(f"Stock updated for item_id: {item_id}")
 
-        # Record the order
+        # Step 6: Record the order
         with db_lock:
             try:
                 conn = sqlite3.connect(DATABASE)
@@ -145,35 +144,45 @@ def purchase(item_id):
                 timestamp = datetime.datetime.now().isoformat()
                 cursor.execute('INSERT INTO orders (item_id, quantity, timestamp) VALUES (?, ?, ?)', (item_id, 1, timestamp))
                 conn.commit()
-                conn.close()
-                logging.info(f"Order recorded for item_id: {item_id}")
+                logging.info(f"Order recorded in database for item_id: {item_id}")
             except sqlite3.Error as e:
-                logging.error(f"Error recording order: {e}")
+                logging.error(f"Error recording order for item_id {item_id}: {e}")
                 return jsonify({'error': 'Failed to record order'}), 500
+            finally:
+                conn.close()
 
-        # Propagate purchase to other replicas
+        # Step 7: Propagate purchase to other replicas
         data_to_propagate = {'item_id': item_id, 'quantity': 1, 'timestamp': timestamp}
         propagate_update(data_to_propagate)
+        logging.info(f"Propagation request sent for item_id: {item_id}")
 
         # Log purchase with book title
         book_title = item_info.get('title', 'Unknown Title')
-        logging.info(f"Bought book '{book_title}'")
+        logging.info(f"Purchase completed successfully for book '{book_title}'")
         return jsonify({'message': f'Purchased item {item_id}'})
+
+    except requests.exceptions.Timeout as e:
+        logging.error(f"Timeout error in purchase for item_id {item_id}: {e}")
+        return jsonify({'error': 'Timeout error during purchase operation'}), 504
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Network error in purchase for item_id {item_id}: {e}")
+        return jsonify({'error': 'Network error during purchase operation'}), 500
     except Exception as e:
-        logging.error(f"Error in purchase: {e}")
+        logging.error(f"Unexpected error in purchase for item_id {item_id}: {e}")
         return jsonify({'error': 'An error occurred while processing your purchase.'}), 500
+
 
 @app.route('/replica_purchase', methods=['POST'])
 def replica_purchase():
     """
     Endpoint to receive purchase updates from other replicas.
-
     This endpoint ensures consistency across replicas by recording purchase transactions from other instances.
-
+    
     Returns:
         Response: JSON message indicating success or failure of the replication.
     """
     data = request.get_json()
+    logging.info(f"Received data for order replica purchase: {data}")
     item_id = data.get('item_id')
     quantity = data.get('quantity')
     timestamp = data.get('timestamp')
@@ -184,16 +193,19 @@ def replica_purchase():
 
     with db_lock:
         try:
-            conn = sqlite3.connect(DATABASE)
+            conn = sqlite3.connect(DATABASE, timeout=500)
             cursor = conn.cursor()
-            cursor.execute('INSERT INTO orders (item_id, quantity, timestamp) VALUES (?, ?, ?)', (item_id, quantity, timestamp))
+            cursor.execute('INSERT INTO orders (item_id, quantity, timestamp) VALUES (?, ?, ?)', 
+                           (item_id, quantity, timestamp))
             conn.commit()
-            conn.close()
             logging.info(f"Replica recorded purchase for item_id: {item_id}")
             return jsonify({'message': 'Replica purchase recorded'}), 200
         except sqlite3.Error as e:
             logging.error(f"Error in replica purchase: {e}")
             return jsonify({'error': 'An error occurred while recording the purchase.'}), 500
+        finally:
+            conn.close()
+
 
 @app.route('/orders', methods=['GET'])
 def get_all_orders():
