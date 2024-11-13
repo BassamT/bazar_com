@@ -34,7 +34,7 @@ def restock_items():
     This function includes improved error handling, optimized cache invalidation, and a delay mechanism.
     """
     while True:
-        time.sleep(10)  # Restock every 60 seconds 
+        time.sleep(60)  # Restock every 60 seconds 
         with db_lock:
             try:
                 conn = sqlite3.connect(DATABASE)
